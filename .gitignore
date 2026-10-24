@@ -1,0 +1,15 @@
+# Jangan commit file env rahasia
+.env
+.env.local
+*.env
+!.env.example
+
+# Abaikan volume database fisik
+pgdata/
+*/pgdata/
+
+# OS / Editor
+.vscode/
+.idea/
+Thumbs.db
+Desktop.ini

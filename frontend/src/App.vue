@@ -1,8 +1,8 @@
 <script setup>
 import { ref, onMounted } from 'vue'
-import taskApi from './services/api' // 1. Impor instance Axios yang telah dibuat
+import taskApi from './services/api'
 
-// 2. State reaktif
+// State reaktif
 const tasks = ref([])
 const isLoading = ref(false)
 const isSubmitting = ref(false)
@@ -14,13 +14,13 @@ const newTask = ref({
   status: 'Todo'
 })
 
-// 3. Fungsi Ambil Data (GET)
+// Fungsi Ambil Data (GET)
 const fetchTasks = async () => {
   isLoading.value = true
   errorMessage.value = ''
   try {
     const response = await taskApi.getTasks()
-    tasks.value = response.data // Axios otomatis mem-parsing JSON ke .data
+    tasks.value = response.data
   } catch (error) {
     errorMessage.value = 'Gagal memuat tugas dari database.'
     console.error('Error saat fetch tasks:', error)
@@ -29,7 +29,7 @@ const fetchTasks = async () => {
   }
 }
 
-// 4. Fungsi Tambah Data (POST)
+// Fungsi Tambah Data (POST)
 const addTask = async () => {
   if (!newTask.value.title.trim()) return
 
@@ -56,7 +56,7 @@ const addTask = async () => {
   }
 }
 
-// 5. Fungsi Update Status (PUT)
+// Fungsi Update Status (PUT)
 const toggleStatus = async (task) => {
   const nextStatus = {
     'Todo': 'In Progress',
@@ -81,7 +81,7 @@ const toggleStatus = async (task) => {
   }
 }
 
-// 6. Fungsi Hapus Data (DELETE)
+// Fungsi Hapus Data (DELETE)
 const deleteTask = async (id) => {
   if (!confirm('Apakah kamu yakin ingin menghapus tugas ini?')) return
 
@@ -95,7 +95,7 @@ const deleteTask = async (id) => {
   }
 }
 
-// 7. Lifecycle Hook: Ambil data otomatis saat komponen pertama kali dimuat
+// Ambil data saat komponen pertama kali dimuat
 onMounted(() => {
   fetchTasks()
 })
@@ -138,7 +138,7 @@ onMounted(() => {
         <p class="text-xs text-gray-400 mt-1">Kelola dan pantau seluruh pengerjaan tugas proyek</p>
       </div>
 
-      <!-- KONTEN UTAMA: DUA KOLOM BERGAYA KARTU -->
+      <!-- MAIN CONTENT -->
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         
         <!-- KOLOM KIRI: FORM CREATE TASK -->
@@ -265,7 +265,7 @@ onMounted(() => {
                 </p>
               </div>
 
-              <!-- TOMBOL STATUS & HAPUS BERGAYA SOLID -->
+              <!-- ACTION BUTTONS -->
               <div class="flex items-center gap-2 self-end sm:self-center shrink-0">
                 <button
                   @click="toggleStatus(task)"

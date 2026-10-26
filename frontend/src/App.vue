@@ -81,11 +81,30 @@ const deleteTask = (id) => {
           </nav>
         </div>
 
-        <div class="flex items-center gap-3">
+        <!-- <div class="flex items-center gap-3">
           <span class="text-xs bg-gray-100 text-gray-600 font-semibold px-3 py-1.5 rounded-md border border-gray-200">
             {{ tasks.length }} Tasks Total
           </span>
+        </div> -->
+
+        <!-- <div class="flex items-center gap-3">
+          <div class="profile-section">
+            <img :src="user.avatar" alt="Foto Profil" class="avatar" />
+            <span class="username">{{ user.name }}</span>
+          </div>
+        </div> -->
+
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-full bg-slate-100 border border-slate-200 text-slate-500 flex items-center justify-center select-none" title="User Profile">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
+          </div>
         </div>
+
+
+        
       </div>
     </header>
 
@@ -157,7 +176,7 @@ const deleteTask = (id) => {
         <!-- KOLOM KANAN: DAFTAR TUGAS -->
         <div class="lg:col-span-2 bg-white rounded-lg border border-gray-200 overflow-hidden shadow-xs">
           <div class="bg-[#009ee2] px-5 py-3.5 text-white font-bold text-sm tracking-wide flex items-center justify-between">
-            <span>Task Deliverables & Execution</span>
+            <span>Task List Display</span>
             <span class="text-xs bg-white/20 font-semibold px-2 py-0.5 rounded text-white">Active</span>
           </div>
 

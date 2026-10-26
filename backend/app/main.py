@@ -11,13 +11,19 @@ Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Simple Task Project Tracker API")
 
+# Daftar origin frontend yang diizinkan
+origins = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+]
+
 # 2. Konfigurasi CORS agar frontend (React/Vue) dapat mengakses API
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Mengizinkan semua origin untuk kebutuhan development
+    allow_origins=["*"], # Mengizinkan semua origin untuk kebutuhan development
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["*"], # Mengizinkan GET, POST, PUT, DELETE, OPTIONS, dll.
+    allow_headers=["*"], # Mengizinkan semua header HTTP
 )
 
 

@@ -12,5 +12,31 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
 
+  backend:
+    build: ./backend
+    container_name: simple_task_project_tracker_backend
+    restart: always
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    environment:
+      # Di dalam jaringan Docker, host database adalah nama servicenya ("db"), bukan localhost
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+    depends_on:
+      - db
+
+  frontend:
+    build: ./frontend
+    container_name: simple_task_project_tracker_frontend
+    restart: always
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+
 volumes:
   pgdata:

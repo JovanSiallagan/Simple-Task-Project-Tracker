@@ -1,5 +1,6 @@
 # Jangan commit file env rahasia
 .env
+.env.*
 .env.local
 *.env
 !.env.example

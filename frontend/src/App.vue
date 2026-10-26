@@ -1,66 +1,104 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
+import taskApi from './services/api' // 1. Impor instance Axios yang telah dibuat
 
-// 1. DATA REAKTIF FORM INPUT
+// 2. State reaktif
+const tasks = ref([])
+const isLoading = ref(false)
+const isSubmitting = ref(false)
+const errorMessage = ref('')
+
 const newTask = ref({
   title: '',
   description: '',
   status: 'Todo'
 })
 
-// 2. DATA DUMMY TUGAS
-const tasks = ref([
-  {
-    id: 1,
-    title: 'Setup Database PostgreSQL & Docker',
-    description: 'Konfigurasi docker-compose.yml dengan environment variables port 5433.',
-    status: 'Done'
-  },
-  {
-    id: 2,
-    title: 'Implementasi CRUD REST API',
-    description: 'Endpoint FastAPI untuk Create, Read, Update, Delete data tasks.',
-    status: 'In Progress'
-  },
-  {
-    id: 3,
-    title: 'Integrasi Frontend Vue 3',
-    description: 'Slicing antarmuka data table dan menyambungkan axios HTTP client.',
-    status: 'Todo'
+// 3. Fungsi Ambil Data (GET)
+const fetchTasks = async () => {
+  isLoading.value = true
+  errorMessage.value = ''
+  try {
+    const response = await taskApi.getTasks()
+    tasks.value = response.data // Axios otomatis mem-parsing JSON ke .data
+  } catch (error) {
+    errorMessage.value = 'Gagal memuat tugas dari database.'
+    console.error('Error saat fetch tasks:', error)
+  } finally {
+    isLoading.value = false
   }
-])
-
-// 3. FUNGSI MENAMBAH TUGAS (Create)
-const addTask = () => {
-  if (!newTask.value.title.trim()) return
-
-  tasks.value.unshift({
-    id: Date.now(),
-    title: newTask.value.title,
-    description: newTask.value.description,
-    status: newTask.value.status
-  })
-
-  // Reset form
-  newTask.value.title = ''
-  newTask.value.description = ''
-  newTask.value.status = 'Todo'
 }
 
-// 4. FUNGSI GANTI STATUS (Toggle)
-const toggleStatus = (task) => {
-  const flow = {
+// 4. Fungsi Tambah Data (POST)
+const addTask = async () => {
+  if (!newTask.value.title.trim()) return
+
+  isSubmitting.value = true
+  try {
+    await taskApi.createTask({
+      title: newTask.value.title,
+      description: newTask.value.description,
+      status: newTask.value.status
+    })
+
+    // Reset isi form input
+    newTask.value.title = ''
+    newTask.value.description = ''
+    newTask.value.status = 'Todo'
+
+    // Panggil fetchTasks ulang (Refetch strategy)
+    await fetchTasks()
+  } catch (error) {
+    alert('Gagal menyimpan tugas baru ke server.')
+    console.error('Error saat create task:', error)
+  } finally {
+    isSubmitting.value = false
+  }
+}
+
+// 5. Fungsi Update Status (PUT)
+const toggleStatus = async (task) => {
+  const nextStatus = {
     'Todo': 'In Progress',
     'In Progress': 'Done',
     'Done': 'Todo'
   }
-  task.status = flow[task.status] || 'Todo'
+
+  const updatedStatus = nextStatus[task.status] || 'Todo'
+
+  try {
+    await taskApi.updateTask(task.id, {
+      title: task.title,
+      description: task.description,
+      status: updatedStatus
+    })
+
+    // Fetch ulang agar status di layar sinkron dengan DB
+    await fetchTasks()
+  } catch (error) {
+    alert('Gagal memperbarui status tugas.')
+    console.error('Error saat update task:', error)
+  }
 }
 
-// 5. FUNGSI HAPUS TUGAS (Delete)
-const deleteTask = (id) => {
-  tasks.value = tasks.value.filter(t => t.id !== id)
+// 6. Fungsi Hapus Data (DELETE)
+const deleteTask = async (id) => {
+  if (!confirm('Apakah kamu yakin ingin menghapus tugas ini?')) return
+
+  try {
+    await taskApi.deleteTask(id)
+    // Fetch ulang setelah data terhapus di backend
+    await fetchTasks()
+  } catch (error) {
+    alert('Gagal menghapus tugas dari server.')
+    console.error('Error saat delete task:', error)
+  }
 }
+
+// 7. Lifecycle Hook: Ambil data otomatis saat komponen pertama kali dimuat
+onMounted(() => {
+  fetchTasks()
+})
 </script>
 
 <template>
@@ -81,19 +119,6 @@ const deleteTask = (id) => {
           </nav>
         </div>
 
-        <!-- <div class="flex items-center gap-3">
-          <span class="text-xs bg-gray-100 text-gray-600 font-semibold px-3 py-1.5 rounded-md border border-gray-200">
-            {{ tasks.length }} Tasks Total
-          </span>
-        </div> -->
-
-        <!-- <div class="flex items-center gap-3">
-          <div class="profile-section">
-            <img :src="user.avatar" alt="Foto Profil" class="avatar" />
-            <span class="username">{{ user.name }}</span>
-          </div>
-        </div> -->
-
         <div class="flex items-center gap-3">
           <div class="w-9 h-9 rounded-full bg-slate-100 border border-slate-200 text-slate-500 flex items-center justify-center select-none" title="User Profile">
             <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -102,9 +127,6 @@ const deleteTask = (id) => {
             </svg>
           </div>
         </div>
-
-
-        
       </div>
     </header>
 
@@ -166,9 +188,14 @@ const deleteTask = (id) => {
 
             <button
               type="submit"
-              class="w-full bg-[#009ee2] hover:bg-[#0089c4] text-white text-xs font-bold py-2.5 rounded-md transition shadow-xs cursor-pointer tracking-wider uppercase"
+              :disabled="isSubmitting"
+              class="w-full bg-[#009ee2] hover:bg-[#0089c4] disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-bold py-2.5 rounded-md transition shadow-xs cursor-pointer tracking-wider uppercase flex items-center justify-center gap-2"
             >
-              + Create Task
+              <svg v-if="isSubmitting" class="animate-spin h-3.5 w-3.5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+              </svg>
+              <span>{{ isSubmitting ? 'Menyimpan...' : '+ Create Task' }}</span>
             </button>
           </form>
         </div>
@@ -177,12 +204,43 @@ const deleteTask = (id) => {
         <div class="lg:col-span-2 bg-white rounded-lg border border-gray-200 overflow-hidden shadow-xs">
           <div class="bg-[#009ee2] px-5 py-3.5 text-white font-bold text-sm tracking-wide flex items-center justify-between">
             <span>Task List Display</span>
-            <span class="text-xs bg-white/20 font-semibold px-2 py-0.5 rounded text-white">Active</span>
+            <span class="text-xs bg-white/20 font-semibold px-2.5 py-1 rounded text-white">
+              {{ tasks.length }} Tasks Total
+            </span>
           </div>
 
           <div class="divide-y divide-gray-100">
+            <!-- TAMPILAN LOADING -->
+            <div v-if="isLoading" class="py-12 flex flex-col items-center justify-center text-gray-400 gap-2">
+              <svg class="animate-spin h-6 w-6 text-[#009ee2]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+              </svg>
+              <span class="text-xs">Memuat daftar tugas...</span>
+            </div>
+
+            <!-- TAMPILAN ERROR -->
+            <div v-else-if="errorMessage" class="p-6">
+              <div class="bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 rounded-md text-xs flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div class="flex items-center gap-2">
+                  <svg class="w-4 h-4 text-rose-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="10" stroke-width="2"/>
+                    <line x1="12" y1="8" x2="12" y2="12" stroke-width="2"/>
+                    <line x1="12" y1="16" x2="12.01" y2="16" stroke-width="2"/>
+                  </svg>
+                  <span>{{ errorMessage }}</span>
+                </div>
+                <button
+                  @click="fetchTasks"
+                  class="bg-rose-600 hover:bg-rose-700 text-white font-bold px-3 py-1.5 rounded transition uppercase text-[10px] cursor-pointer"
+                >
+                  Coba Lagi
+                </button>
+              </div>
+            </div>
+
             <!-- TAMPILAN KOSONG -->
-            <div v-if="tasks.length === 0" class="py-12 text-center text-xs text-gray-400">
+            <div v-else-if="tasks.length === 0" class="py-12 text-center text-xs text-gray-400">
               Belum ada tugas yang ditambahkan.
             </div>
 
@@ -196,7 +254,7 @@ const deleteTask = (id) => {
               <div class="space-y-1 flex-1">
                 <div class="flex items-center gap-2.5">
                   <span class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">
-                    #{{ String(index + 1).padStart(2, '0') }}
+                    #{{ String(tasks.length - index).padStart(2, '0') }}
                   </span>
                   <h3 class="text-xs font-semibold text-gray-900">
                     {{ task.title }}
